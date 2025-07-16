@@ -1,12 +1,11 @@
-<!DOCTYPE html>
-<html lang="tr">
+<!DOCTYPE html><html lang="tr">
 <head>
   <meta charset="UTF-8">
   <title>Coin Kar/Zarar Hesaplama</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      max-width: 500px;
+      max-width: 600px;
       margin: 40px auto;
       padding: 20px;
       border: 2px solid #ccc;
@@ -20,7 +19,7 @@
       display: block;
       margin: 10px 0 5px;
     }
-    input {
+    input, select {
       width: 100%;
       padding: 8px;
       margin-bottom: 10px;
@@ -37,48 +36,108 @@
     }
     .sonuc {
       margin-top: 20px;
-      font-size: 18px;
+      font-size: 16px;
       font-weight: bold;
-      text-align: center;
     }
+    ul { padding-left: 20px; }
   </style>
 </head>
 <body>
-  <h2>Coin Kar/Zarar Hesaplama</h2>
+  <h2>Coin Alım-Satım Takip ve Kar/Zarar Hesaplama</h2>  <h3>Yeni Alış Ekle</h3>
+  <label>Coin Adı:</label>
+  <input type="text" id="coin" placeholder="Örn: WIF"><label>Alış Fiyatı (₺):</label> <input type="number" id="alis" step="0.0001">
 
-  <label for="alis">Alış Fiyatı (₺):</label>
-  <input type="number" id="alis" step="0.0001" placeholder="Örn: 3.25">
+<label>Adet:</label> <input type="number" id="adet" step="0.0001">
 
-  <label for="satis">Satış Fiyatı (₺):</label>
-  <input type="number" id="satis" step="0.0001" placeholder="Örn: 4.20">
+<button onclick="alisEkle()">Alışı Kaydet</button>
 
-  <label for="adet">Adet:</label>
-  <input type="number" id="adet" step="0.0001" placeholder="Örn: 250">
+  <h3>Satış Yap</h3>
+  <label>Coin Adı:</label>
+  <input type="text" id="satisCoin" placeholder="Örn: WIF"><label>Satış Fiyatı (₺):</label> <input type="number" id="satisFiyat" step="0.0001">
 
-  <button onclick="hesapla()">Hesapla</button>
+<label>Satılan Adet:</label> <input type="number" id="satisAdet" step="0.0001">
 
-  <div class="sonuc" id="sonuc"></div>
+<button onclick="satisYap()">Satışı Hesapla</button>
 
-  <script>
-    function hesapla() {
-      const alis = parseFloat(document.getElementById('alis').value);
-      const satis = parseFloat(document.getElementById('satis').value);
+  <div class="sonuc" id="sonuc"></div>  <h3>Alış Geçmişi</h3>
+  <ul id="gecmis"></ul>  <script>
+    let alislar = JSON.parse(localStorage.getItem('alislar') || '[]');
+
+    function guncelleGecmis() {
+      const gecmis = document.getElementById('gecmis');
+      gecmis.innerHTML = '';
+      alislar.forEach((a, i) => {
+        const li = document.createElement('li');
+        li.textContent = `${a.coin.toUpperCase()} | ${a.adet} adet | ${a.fiyat}₺`; 
+        gecmis.appendChild(li);
+      });
+    }
+
+    function alisEkle() {
+      const coin = document.getElementById('coin').value.trim();
+      const fiyat = parseFloat(document.getElementById('alis').value);
       const adet = parseFloat(document.getElementById('adet').value);
+      if (!coin || isNaN(fiyat) || isNaN(adet)) {
+        alert("Tüm alış bilgilerini doğru girin.");
+        return;
+      }
+      alislar.push({ coin, fiyat, adet });
+      localStorage.setItem('alislar', JSON.stringify(alislar));
+      guncelleGecmis();
+      document.getElementById('coin').value = '';
+      document.getElementById('alis').value = '';
+      document.getElementById('adet').value = '';
+    }
 
-      if (isNaN(alis) || isNaN(satis) || isNaN(adet)) {
-        document.getElementById('sonuc').innerText = "Lütfen tüm alanları doldurun.";
+    function satisYap() {
+      const coin = document.getElementById('satisCoin').value.trim();
+      const satisFiyat = parseFloat(document.getElementById('satisFiyat').value);
+      let satisAdet = parseFloat(document.getElementById('satisAdet').value);
+
+      if (!coin || isNaN(satisFiyat) || isNaN(satisAdet)) {
+        alert("Tüm satış bilgilerini doğru girin.");
         return;
       }
 
-      const toplamAlis = alis * adet;
-      const toplamSatis = satis * adet;
-      const fark = toplamSatis - toplamAlis;
-      const yuzde = ((fark / toplamAlis) * 100).toFixed(2);
+      let kalanAdet = satisAdet;
+      let kar = 0;
+      let yeniAlislar = [];
 
-      let mesaj = `Toplam Kar/Zarar: ${fark.toFixed(2)}₺\n`;
-      mesaj += `Yüzdelik Değişim: ${yuzde}%`;
-      document.getElementById('sonuc').innerText = mesaj;
+      for (let i = 0; i < alislar.length; i++) {
+        let a = alislar[i];
+        if (a.coin.toUpperCase() !== coin.toUpperCase()) {
+          yeniAlislar.push(a);
+          continue;
+        }
+
+        if (kalanAdet <= 0) {
+          yeniAlislar.push(a);
+          continue;
+        }
+
+        if (a.adet <= kalanAdet) {
+          kar += (satisFiyat - a.fiyat) * a.adet;
+          kalanAdet -= a.adet;
+        } else {
+          kar += (satisFiyat - a.fiyat) * kalanAdet;
+          a.adet -= kalanAdet;
+          yeniAlislar.push(a);
+          kalanAdet = 0;
+        }
+      }
+
+      localStorage.setItem('alislar', JSON.stringify(yeniAlislar));
+      alislar = yeniAlislar;
+      guncelleGecmis();
+
+      const sonuc = document.getElementById('sonuc');
+      if (kalanAdet > 0) {
+        sonuc.innerText = `Yetersiz adet: ${kalanAdet} adet coin bulunamadı.`;
+      } else {
+        sonuc.innerText = `Toplam Kar/Zarar: ${kar.toFixed(2)}₺`;
+      }
     }
-  </script>
-</body>
+
+    guncelleGecmis();
+  </script></body>
 </html>
