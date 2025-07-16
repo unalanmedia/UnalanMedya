@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Coin Kar/Zarar Hesaplama</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 500px;
+      margin: 40px auto;
+      padding: 20px;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      background: #f7f7f7;
+    }
+    h2 {
+      text-align: center;
+    }
+    label {
+      display: block;
+      margin: 10px 0 5px;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      font-weight: bold;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .sonuc {
+      margin-top: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h2>Coin Kar/Zarar Hesaplama</h2>
+
+  <label for="alis">Alış Fiyatı (₺):</label>
+  <input type="number" id="alis" step="0.0001" placeholder="Örn: 3.25">
+
+  <label for="satis">Satış Fiyatı (₺):</label>
+  <input type="number" id="satis" step="0.0001" placeholder="Örn: 4.20">
+
+  <label for="adet">Adet:</label>
+  <input type="number" id="adet" step="0.0001" placeholder="Örn: 250">
+
+  <button onclick="hesapla()">Hesapla</button>
+
+  <div class="sonuc" id="sonuc"></div>
+
+  <script>
+    function hesapla() {
+      const alis = parseFloat(document.getElementById('alis').value);
+      const satis = parseFloat(document.getElementById('satis').value);
+      const adet = parseFloat(document.getElementById('adet').value);
+
+      if (isNaN(alis) || isNaN(satis) || isNaN(adet)) {
+        document.getElementById('sonuc').innerText = "Lütfen tüm alanları doldurun.";
+        return;
+      }
+
+      const toplamAlis = alis * adet;
+      const toplamSatis = satis * adet;
+      const fark = toplamSatis - toplamAlis;
+      const yuzde = ((fark / toplamAlis) * 100).toFixed(2);
+
+      let mesaj = `Toplam Kar/Zarar: ${fark.toFixed(2)}₺\n`;
+      mesaj += `Yüzdelik Değişim: ${yuzde}%`;
+      document.getElementById('sonuc').innerText = mesaj;
+    }
+  </script>
+</body>
+</html>
